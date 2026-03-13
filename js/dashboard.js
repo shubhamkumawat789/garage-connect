@@ -23,22 +23,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle Logout separately — bind on both the <li> and the <a> inside it
+    // Handle Logout — immediate, no confirmation dialog
     const logoutItem = document.querySelector('.sidebar .nav li.logout');
     if (logoutItem) {
-        const logoutLink = logoutItem.querySelector('a');
-
-        const doLogout = (e) => {
+        logoutItem.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (confirm('Are you sure you want to logout?')) {
-                window.gcApi.logout();
-            }
-        };
-
-        logoutItem.addEventListener('click', doLogout);
+            window.gcApi.logout();
+        });
+        // Also handle clicks on the <a> tag inside
+        const logoutLink = logoutItem.querySelector('a');
         if (logoutLink) {
-            logoutLink.addEventListener('click', doLogout);
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.gcApi.logout();
+            });
         }
     }
 });

@@ -132,8 +132,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 4. Initial Load
     loadGarages();
 
-    // 5. Event Listeners for tabs
+    // 5. Event Listeners for tabs (skip logout)
     document.querySelectorAll('.nav li').forEach(li => {
+        if (li.classList.contains('logout')) return;
         li.addEventListener('click', () => {
             const target = li.getAttribute('data-target');
             if (target === 'search') loadGarages();
