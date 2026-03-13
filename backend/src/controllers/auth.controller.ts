@@ -7,7 +7,7 @@ import { RegisterCustomerInput, RegisterOwnerInput, LoginInput } from "../valida
 export const registerCustomer = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = req.body as RegisterCustomerInput;
-    const normalizedEmail = data.email.toLowerCase();
+    const normalizedEmail = data.email.trim().toLowerCase();
 
     const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) {
@@ -65,7 +65,7 @@ export const registerCustomer = async (req: Request, res: Response): Promise<voi
 export const registerOwner = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = req.body as RegisterOwnerInput;
-    const normalizedEmail = data.email.toLowerCase();
+    const normalizedEmail = data.email.trim().toLowerCase();
 
     const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) {
@@ -118,7 +118,7 @@ export const registerOwner = async (req: Request, res: Response): Promise<void> 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = req.body as LoginInput;
-    const normalizedEmail = data.email.toLowerCase();
+    const normalizedEmail = data.email.trim().toLowerCase();
 
     const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) {
