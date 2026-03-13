@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(h2) container.appendChild(h2);
 
         try {
-            const data = await window.gcApi.fetch('/bookings/customer');
+            const data = await window.gcApi.fetch('/bookings/my');
             if (data.success) {
                 if (data.bookings.length === 0) {
                     container.innerHTML += '<p>No bookings found.</p>';
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         container.innerHTML += `
                             <div class="booking-card">
                                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                                    <h4>${b.services.map(s => s.service.name).join(', ')} at ${b.garage.garageName}</h4>
+                                    <h4>${b.items.map(i => i.service.name).join(', ')} at ${b.garage.garageName}</h4>
                                     <span class="status ${b.status.toLowerCase()}">${b.status}</span>
                                 </div>
                                 <p><i class="fas fa-calendar-alt"></i> Date: ${date} | <i class="fas fa-clock"></i> Time: ${time}</p>
