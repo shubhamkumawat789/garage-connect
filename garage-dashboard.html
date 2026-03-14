@@ -148,6 +148,27 @@
         </div>
     </div>
 
+    <!-- Edit Service Modal -->
+    <div id="editServiceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Service</h3>
+                <span class="close-edit-btn">&times;</span>
+            </div>
+            <form id="editServiceForm">
+                <input type="hidden" id="editServiceId">
+                <input type="text" id="editSName" placeholder="Service Name (e.g. Engine Tuning)" required>
+                <input type="number" id="editSPrice" placeholder="Base Price (Rs.)" required>
+                <label style="display:block; margin-bottom: 5px; font-weight:bold;">Supported Vehicles:</label>
+                <div style="display:flex; gap:15px; margin-bottom:15px;">
+                    <label><input type="checkbox" id="editVType4" value="FOUR_WHEELER" style="width:auto; margin:0"> 4-Wheeler</label>
+                    <label><input type="checkbox" id="editVType2" value="TWO_WHEELER" style="width:auto; margin:0"> 2-Wheeler</label>
+                </div>
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
     <script src="js/api.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/garage-dashboard.js"></script>

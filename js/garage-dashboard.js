@@ -55,7 +55,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <h4>${s.name}</h4>
                         <p><strong>Price:</strong> Rs. ${s.basePrice}</p>
                         <p><strong>Vehicle Types:</strong> ${s.vehicleTypes.join(', ')}</p>
-                        <button>Edit</button>
+                        <div style="margin-top: 10px; display:flex; gap: 10px;">
+                            <button class="edit-btn" style="background:#ffc107; color:#000;" 
+                                data-id="${s.id}" data-name="${s.name}" data-price="${s.basePrice}" data-vtypes="${s.vehicleTypes.join(',')}">Edit</button>
+                            <button class="delete-btn" style="background:#dc3545; color:#fff;" onclick="deleteService('${s.id}')">Delete</button>
+                        </div>
                     </div>
                 `;
             });
@@ -213,5 +217,78 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btn.disabled = false;
             }
         });
+
+        // 7. Edit Service Modal & Logic
+        const editServiceModal = document.getElementById('editServiceModal');
+        const closeEditBtn = document.querySelector('.close-edit-btn');
+        const editServiceForm = document.getElementById('editServiceForm');
+
+        closeEditBtn?.addEventListener('click', () => editServiceModal.classList.remove('active'));
+        window.addEventListener('click', (e) => { if (e.target === editServiceModal) editServiceModal.classList.remove('active'); });
+
+        // Event delegation for dynamically added Edit buttons
+        document.getElementById('services').addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-btn')) {
+                const btn = e.target;
+                document.getElementById('editServiceId').value = btn.getAttribute('data-id');
+                document.getElementById('editSName').value = btn.getAttribute('data-name');
+                document.getElementById('editSPrice').value = btn.getAttribute('data-price');
+                
+                const vTypes = btn.getAttribute('data-vtypes').split(',');
+                document.getElementById('editVType4').checked = vTypes.includes('FOUR_WHEELER');
+                document.getElementById('editVType2').checked = vTypes.includes('TWO_WHEELER');
+                
+                editServiceModal.classList.add('active');
+            }
+        });
+
+        editServiceForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = editServiceForm.querySelector('button');
+            const serviceId = document.getElementById('editServiceId').value;
+            const vehicleTypes = [];
+            if (document.getElementById('editVType4').checked) vehicleTypes.push('FOUR_WHEELER');
+            if (document.getElementById('editVType2').checked) vehicleTypes.push('TWO_WHEELER');
+
+            const payload = {
+                name: document.getElementById('editSName').value,
+                basePrice: parseFloat(document.getElementById('editSPrice').value),
+                vehicleTypes
+            };
+
+            try {
+                btn.disabled = true;
+                btn.innerText = 'Saving...';
+                const data = await window.gcApi.fetch(`/services/${serviceId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(payload)
+                });
+                if (data.success) {
+                    alert('Service updated successfully!');
+                    window.location.reload();
+                }
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Save Changes';
+            }
+        });
+
+        // 8. Delete Service Logic
+        window.deleteService = async (serviceId) => {
+            if (!confirm('Are you sure you want to delete this service?')) return;
+            try {
+                const data = await window.gcApi.fetch(`/services/${serviceId}`, {
+                    method: 'DELETE'
+                });
+                if (data.success) {
+                    alert('Service deleted successfully!');
+                    window.location.reload();
+                }
+            } catch (err) {
+                alert(err.message);
+            }
+        };
     }
 });
