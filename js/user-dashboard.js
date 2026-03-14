@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p class="rating">
                         <i class="fas fa-star"></i> ${g.rating.toFixed(1)} (${g._count?.reviews ?? g.reviewCount ?? 0} Reviews)
                     </p>
-                    <p><i class="fas fa-map-marker-alt"></i> ${g.address}, ${g.city}</p>
+                    <p><i class="fas fa-map-marker-alt"></i> ${[g.address, g.city].filter(Boolean).join(', ')}</p>
                     <p><i class="fas fa-tag"></i> ${g.services?.map(s => s.name).join(', ') || 'General Service'}</p>
                     <button class="view-btn" onclick="event.stopPropagation(); window.location.href='booking.html?id=${g.id}'">View & Book</button>
                 </div>
@@ -83,12 +83,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const emergencyBtn = document.querySelector('.emergency-btn');
     
     const initMap = () => {
-        if (map) return;
-        // Default to Portland (matching seed data) or global view
-        map = L.map('map').setView([45.5231, -122.6765], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        if (map) {
+            map.invalidateSize();
+            return;
+        }
+        try {
+            // Default to Portland (matching seed data) or global view
+            map = L.map('map').setView([45.5231, -122.6765], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            console.log("[MAP] Leaflet initialized successfully.");
+            setTimeout(() => map.invalidateSize(), 500); // Ensure layout is settled
+        } catch (err) {
+            console.error("[MAP] Failed to initialize Leaflet:", err);
+        }
     };
 
     const updateMapMarkers = (garages) => {
@@ -104,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         garages.forEach(g => {
             if (g.latitude && g.longitude) {
                 const marker = L.marker([g.latitude, g.longitude]).addTo(map);
-                marker.bindPopup(`<b>${g.garageName}</b><br>${g.address}`);
+                marker.bindPopup(`<b>${g.garageName}</b><br>${[g.address, g.city].filter(Boolean).join(', ')}`);
                 
                 // Marker click sync: scroll into view and highlight card
                 marker.on('click', () => {
