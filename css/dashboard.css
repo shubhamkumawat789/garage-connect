@@ -145,7 +145,8 @@ input, select, textarea {
 
 .results-area { display: flex; gap: 20px; }
 .garage-list { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-.map-view { flex: 1; background: #e0e0e0; border-radius: 10px; }
+.map-view { flex: 1; background: #e0e0e0; border-radius: 10px; position: relative; min-height: 400px; }
+#map { width: 100%; height: 100%; border-radius: 10px; z-index: 1; }
 
 .garage-card {
     background: var(--white);
@@ -171,6 +172,9 @@ input, select, textarea {
 .status { padding: 5px 10px; border-radius: 15px; color: var(--white); font-size: 0.8em; }
 .status.upcoming { background-color: #5cb85c; }
 .status.completed { background-color: #777; }
+.status.declined { background-color: #d9534f; }
+.status.approved { background-color: #409db6; }
+.status.in_progress { background-color: #f0ad4e; }
 .add-btn { background: #409db6; }
 
 /* Garage Dashboard Specific */

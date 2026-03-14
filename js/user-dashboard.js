@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         resultsArea.innerHTML = garages.map(g => `
-            <div class="garage-card">
+            <div class="garage-card" data-garage-name="${g.garageName}" style="cursor:pointer;">
                 <img src="${g.images?.[0] || 'Auto pro.png'}" alt="Garage Image">
                 <div class="card-details">
                     <h3>${g.garageName}</h3>
@@ -59,71 +59,118 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </p>
                     <p><i class="fas fa-map-marker-alt"></i> ${g.address}, ${g.city}</p>
                     <p><i class="fas fa-tag"></i> ${g.services?.map(s => s.name).join(', ') || 'General Service'}</p>
-                    <button class="view-btn" onclick="window.location.href='booking.html?id=${g.id}'">View & Book</button>
+                    <button class="view-btn" onclick="event.stopPropagation(); window.location.href='booking.html?id=${g.id}'">View & Book</button>
                 </div>
             </div>
         `).join('');
+
+        // Card click sync: Highlight marker and center map
+        document.querySelectorAll('.garage-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const name = card.getAttribute('data-garage-name');
+                const marker = markers.find(m => m.getPopup().getContent().includes(name));
+                if (marker) {
+                    marker.openPopup();
+                    map.setView(marker.getLatLng(), 15);
+                }
+            });
+        });
     };
 
-    // --- UI Logic Fixes (Maps & Emergency) ---
+    // --- UI Logic Fixes (Real Maps & Emergency) ---
+    let map;
+    let markers = [];
     const emergencyBtn = document.querySelector('.emergency-btn');
-    const searchInput = document.querySelector('.search-container input');
     
-    // Success Criteria: Markers match filtered list, centers on results
+    const initMap = () => {
+        if (map) return;
+        // Default to Portland (matching seed data) or global view
+        map = L.map('map').setView([45.5231, -122.6765], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+    };
+
     const updateMapMarkers = (garages) => {
-        // Since map.jpg is a static asset in current spec, we log/show marker status
-        console.log(`[MAP SYNC] Updating markers for ${garages.length} garages.`);
-        const mapArea = document.querySelector('.map-view');
-        if (mapArea) {
-            const markerCountBadge = document.getElementById('map-marker-count') || document.createElement('div');
-            markerCountBadge.id = 'map-marker-count';
-            markerCountBadge.style = "position:absolute; top:10px; right:10px; background:red; color:white; padding:5px 10px; border-radius:15px; font-weight:bold;";
-            markerCountBadge.innerText = `${garages.length} Markers Active`;
-            mapArea.style.position = 'relative';
-            if (!document.getElementById('map-marker-count')) mapArea.appendChild(markerCountBadge);
+        if (!map) initMap();
+        
+        // Clear old markers
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+
+        if (garages.length === 0) return;
+
+        const bounds = [];
+        garages.forEach(g => {
+            if (g.latitude && g.longitude) {
+                const marker = L.marker([g.latitude, g.longitude]).addTo(map);
+                marker.bindPopup(`<b>${g.garageName}</b><br>${g.address}`);
+                
+                // Marker click sync: scroll into view and highlight card
+                marker.on('click', () => {
+                    const cards = document.querySelectorAll('.garage-card');
+                    cards.forEach(card => {
+                        if (card.querySelector('h3').innerText === g.garageName) {
+                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            card.style.border = '2px solid #409db6';
+                            setTimeout(() => card.style.border = 'none', 3000);
+                        }
+                    });
+                });
+
+                markers.push(marker);
+                bounds.push([g.latitude, g.longitude]);
+            }
+        });
+
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [50, 50] });
         }
     };
 
-    const applyEmergencyFilter = async () => {
-        // 1. Success Criterion: Logic is service=Emergency + isVerified=true
-        const rating = 0;
-        const query = "Emergency";
-        
-        // 2. Geolocation logic with fallback
+    const applyFilters = () => {
+        const rating = parseInt(document.getElementById('filterRating').value) || 0;
+        const type = document.getElementById('filterType').value;
+        const service = document.getElementById('filterService').value;
+        const query = document.querySelector('.search-container input').value.toLowerCase();
+        const isEmergencyMode = emergencyBtn.classList.contains('active');
+
         let filtered = allGarages.filter(g => {
-            const matchesService = g.services.some(s => s.name.toLowerCase().includes(query.toLowerCase()));
-            const isVerified = g.isVerified === true;
-            return matchesService && isVerified;
+            const matchesQuery = !query || g.garageName.toLowerCase().includes(query) || 
+                               g.address.toLowerCase().includes(query) || 
+                               g.city.toLowerCase().includes(query);
+            const matchesRating = g.rating >= rating;
+            const matchesType = !type || g.services.some(s => s.vehicleTypes.includes(type));
+            const matchesService = !service || g.services.some(s => s.name === service);
+            
+            // Emergency Logic: service=Emergency + isVerified=true
+            if (isEmergencyMode) {
+                const hasEmergencyService = g.services.some(s => s.name.toLowerCase().includes('emergency'));
+                if (!hasEmergencyService || !g.isVerified) return false;
+            }
+
+            return matchesQuery && matchesRating && matchesType && matchesService;
         });
 
-        // 3. Radius logic if location available
-        if ("geolocation" in navigator) {
+        // Geolocation Radius Logic for Emergency Mode
+        if (isEmergencyMode && "geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
                     const radiusKm = 10;
-                    const radiusMiles = radiusKm * 0.621371;
                     
                     const nearbyFiltered = filtered.filter(g => {
-                        if (g.latitude === null || g.longitude === null) return false;
-                        // Helper from backend logic for consistency
-                        const getDist = (lat1, lon1, lat2, lon2) => {
-                            const R = 3958.8;
-                            const dLat = (lat2 - lat1) * (Math.PI / 180);
-                            const dLon = (lon2 - lon1) * (Math.PI / 180);
-                            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
-                            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-                        };
-                        return getDist(latitude, longitude, g.latitude, g.longitude) <= radiusMiles;
+                        if (!g.latitude || !g.longitude) return false;
+                        const dist = window.gcApi.getDistance(latitude, longitude, g.latitude, g.longitude);
+                        return dist <= radiusKm;
                     });
                     
                     renderGarages(nearbyFiltered);
                     updateMapMarkers(nearbyFiltered);
-                    console.log("[EMERGENCY] Radius filter applied successfully.");
+                    console.log("[EMERGENCY] Radius filter (10km) applied.");
                 },
                 (err) => {
-                    // Fallback Criterion: UI must not break on denial
-                    console.warn("[EMERGENCY] Geolocation denied/unavailable. Using global verified emergency list.");
+                    console.warn("[EMERGENCY] Geolocation fallback: showing all verified emergency garages.");
                     renderGarages(filtered);
                     updateMapMarkers(filtered);
                 }
@@ -134,14 +181,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    emergencyBtn?.addEventListener('click', applyEmergencyFilter);
-    
-    // Enhance applyFilters to sync map
-    const originalRenderGarages = renderGarages;
-    renderGarages = (garages) => {
-        originalRenderGarages(garages);
-        updateMapMarkers(garages);
-    };
+    emergencyBtn?.addEventListener('click', () => {
+        emergencyBtn.classList.toggle('active');
+        emergencyBtn.style.backgroundColor = emergencyBtn.classList.contains('active') ? '#b64040' : 'red';
+        applyFilters();
+    });
 
     document.getElementById('filterRating').addEventListener('change', applyFilters);
     document.getElementById('filterType').addEventListener('change', applyFilters);
