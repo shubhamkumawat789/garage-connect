@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. DOM Elements
     const usersTbody = document.querySelector('#usersTable tbody');
     const garagesTbody = document.querySelector('#garagesTable tbody');
+    const reviewsTbody = document.querySelector('#reviewsTable tbody');
 
     // 3. Data Loaders
     async function loadUsers() {
@@ -61,6 +62,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function loadReviews() {
+        reviewsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading reviews...</td></tr>';
+        try {
+            // Success Criterion: Check reviews associated with all garages via admin
+            const data = await window.gcApi.fetch('/admin/garages');
+            if (data && data.success) {
+                // Flatten reviews from all garages (simplified since we don't have a direct /admin/reviews GET yet)
+                // In real implementation, /admin/reviews would exist. Using collected data for now.
+                let allReviews = [];
+                for (const g of data.garages) {
+                    // We fetch detail for each to get reviews if count > 0
+                    if (g._count.reviews > 0) {
+                        const detail = await window.gcApi.fetch(`/garages/${g.id}`);
+                        if (detail.success) allReviews = [...allReviews, ...detail.garage.reviews];
+                    }
+                }
+
+                if (allReviews.length === 0) {
+                    reviewsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No reviews found.</td></tr>';
+                    return;
+                }
+
+                reviewsTbody.innerHTML = allReviews.map(r => `
+                    <tr>
+                        <td><strong>${r.booking?.garage?.garageName || 'Garage'}</strong></td>
+                        <td>${r.customer?.user?.fullName || 'User'}</td>
+                        <td>${'⭐'.repeat(r.rating)} (${r.rating}/5)</td>
+                        <td>${r.comment || '<i>No comment</i>'}</td>
+                        <td>
+                            <button class="btn-verify" style="background:#dc3545; border-color:#dc3545;" onclick="deleteReview('${r.id}')">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch (err) {
+            reviewsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Failed to load reviews.</td></tr>';
+        }
+    }
+
     // 4. Verification Action
     window.verifyGarage = async (garageId) => {
         if (!confirm('Are you sure you want to verify this garage?')) return;
@@ -83,6 +125,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    window.deleteReview = async (reviewId) => {
+        if (!confirm('Are you sure you want to delete this review? This will recalculate the garage rating.')) return;
+        
+        try {
+            const data = await window.gcApi.fetch(`/admin/reviews/${reviewId}`, {
+                method: 'DELETE'
+            });
+
+            if (data && data.success) {
+                alert('Review deleted and rating updated!');
+                loadReviews(); 
+            } else {
+                alert('Failed to delete review: ' + (data?.message || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('Delete error:', err);
+            alert('An error occurred while deleting.');
+        }
+    };
+
     // 5. Initial Load & Tab Listeners
     loadUsers();
 
@@ -92,6 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = li.getAttribute('data-target');
             if (target === 'users') loadUsers();
             if (target === 'garages') loadGarages();
+            if (target === 'reviews') loadReviews();
         });
     });
 });

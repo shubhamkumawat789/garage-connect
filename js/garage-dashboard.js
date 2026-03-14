@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     ${b.status === 'PENDING' ? `
                                         <div style="margin-top:10px">
                                             <button class="approve-btn" onclick="updateBookingStatus('${b.id}', 'APPROVED')">Approve</button>
-                                            <button class="decline-btn" onclick="updateBookingStatus('${b.id}', 'CANCELLED')">Decline</button>
+                                            <button class="decline-btn" onclick="updateBookingStatus('${b.id}', 'DECLINED')">Decline</button>
                                         </div>
                                     ` : ''}
                                     ${b.status === 'APPROVED' ? `

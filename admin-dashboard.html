@@ -31,7 +31,7 @@
         <ul class="nav">
             <li class="active" data-target="users"><a href="#"><i class="fas fa-users"></i> All Users</a></li>
             <li data-target="garages"><a href="#"><i class="fas fa-warehouse"></i> All Garages</a></li>
-            <!-- Reviews moderation can be an extension -->
+            <li data-target="reviews"><a href="#"><i class="fas fa-star"></i> Manage Reviews</a></li>
             <li class="logout"><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
     </div>
@@ -76,6 +76,27 @@
                                 <th>Owner</th>
                                 <th>Location</th>
                                 <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Reviews Section -->
+            <section id="reviews" class="content-section">
+                <h2>Review Moderation</h2>
+                <div class="table-wrapper">
+                    <table id="reviewsTable">
+                        <thead>
+                            <tr>
+                                <th>Garage</th>
+                                <th>Customer</th>
+                                <th>Rating</th>
+                                <th>Comment</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
