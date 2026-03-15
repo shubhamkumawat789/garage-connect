@@ -37,7 +37,7 @@ async function main() {
     }
   });
 
-  const garage = await prisma.garage.create({
+  const garage1 = await prisma.garage.create({
     data: {
       userId: ownerUser.id,
       garageName: 'FastFix Auto Repair',
@@ -52,12 +52,54 @@ async function main() {
         create: [
           { name: 'Standard Oil Change', basePrice: 49.99, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER'] },
           { name: 'Brake Inspection', basePrice: 20.00, pricingType: 'INSPECTION_BASED', vehicleTypes: ['FOUR_WHEELER'] },
-          { name: 'Bike Chain Lube', basePrice: 15.00, pricingType: 'FIXED', vehicleTypes: ['TWO_WHEELER'] }
+          { name: 'Bike Chain Lube', basePrice: 15.00, pricingType: 'FIXED', vehicleTypes: ['TWO_WHEELER'] },
+          { name: 'Emergency Towing', basePrice: 100.00, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER', 'TWO_WHEELER'] }
         ]
       }
     },
     include: { services: true }
   });
+
+  const garage2 = await prisma.garage.create({
+    data: {
+      userId: ownerUser.id,
+      garageName: 'Speedy Motors',
+      address: '500 Speed St',
+      city: 'Portland',
+      state: 'OR',
+      pincode: '97205',
+      isVerified: true,
+      latitude: 45.5150,
+      longitude: -122.6850,
+      services: {
+        create: [
+          { name: 'Full Service', basePrice: 199.99, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER'] },
+          { name: 'Part Replacement', basePrice: 50.00, pricingType: 'PARTS_DEPENDENT', vehicleTypes: ['FOUR_WHEELER', 'TWO_WHEELER'] }
+        ]
+      }
+    }
+  });
+
+  const garage3 = await prisma.garage.create({
+    data: {
+      userId: ownerUser.id,
+      garageName: 'Pro Auto Works',
+      address: '789 Grease Blvd',
+      city: 'Vancouver',
+      state: 'WA',
+      pincode: '98660',
+      isVerified: false,
+      latitude: 45.6277,
+      longitude: -122.6720,
+      services: {
+        create: [
+          { name: 'Engine Tuning', basePrice: 150.00, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER'] }
+        ]
+      }
+    }
+  });
+
+  const garage = garage1; // Maintain reference for subsequent steps
 
   // 4. Create Customer & Vehicle
   const customerUser = await prisma.user.create({

@@ -36,45 +36,56 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await window.gcApi.fetch('/garages');
             if (data.success) {
                 allGarages = data.garages;
-                renderGarages(allGarages);
+                initMap(); // Ensure map is initialized before first render
+                renderDashboard(allGarages);
             }
         } catch (err) {
             resultsArea.innerHTML = `<p>Error loading garages: ${err.message}</p>`;
         }
     };
 
-    const renderGarages = (garages) => {
+    const renderDashboard = (garages) => {
         const resultsArea = document.querySelector('.garage-list');
+        
+        // 1. One source of truth for cards
         if (garages.length === 0) {
             resultsArea.innerHTML = '<p>No garages found matching your criteria.</p>';
-            return;
-        }
-        resultsArea.innerHTML = garages.map(g => `
-            <div class="garage-card" data-garage-name="${g.garageName}" style="cursor:pointer;">
-                <img src="${g.images?.[0] || 'Auto pro.png'}" alt="Garage Image">
-                <div class="card-details">
-                    <h3>${g.garageName}</h3>
-                    <p class="rating">
-                        <i class="fas fa-star"></i> ${g.rating.toFixed(1)} (${g._count?.reviews ?? g.reviewCount ?? 0} Reviews)
-                    </p>
-                    <p><i class="fas fa-map-marker-alt"></i> ${[g.address, g.city].filter(Boolean).join(', ')}</p>
-                    <p><i class="fas fa-tag"></i> ${g.services?.map(s => s.name).join(', ') || 'General Service'}</p>
-                    <button class="view-btn" onclick="event.stopPropagation(); window.location.href='booking.html?id=${g.id}'">View & Book</button>
-                </div>
-            </div>
-        `).join('');
+        } else {
+            resultsArea.innerHTML = garages.map(g => {
+                const addressParts = [g.address, g.city, g.state].filter(v => v && String(v).toLowerCase() !== 'null');
+                const formattedAddress = addressParts.join(', ');
+                
+                return `
+                    <div class="garage-card" data-garage-id="${g.id}" data-garage-name="${g.garageName.replace(/"/g, '&quot;')}" style="cursor:pointer;">
+                        <img src="${g.images?.[0] || 'Auto pro.png'}" alt="Garage Image">
+                        <div class="card-details">
+                            <h3>${g.garageName}</h3>
+                            <p class="rating">
+                                <i class="fas fa-star"></i> ${g.rating.toFixed(1)} (${g._count?.reviews ?? g.reviewCount ?? 0} Reviews)
+                            </p>
+                            <p><i class="fas fa-map-marker-alt"></i> ${formattedAddress}</p>
+                            <p><i class="fas fa-tag"></i> ${g.services?.map(s => s.name).join(', ') || 'General Service'}</p>
+                            <button class="view-btn" onclick="event.stopPropagation(); window.location.href='booking.html?id=${g.id}'">View & Book</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
-        // Card click sync: Highlight marker and center map
-        document.querySelectorAll('.garage-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const name = card.getAttribute('data-garage-name');
-                const marker = markers.find(m => m.getPopup().getContent().includes(name));
-                if (marker) {
-                    marker.openPopup();
-                    map.setView(marker.getLatLng(), 15);
-                }
+            // Card click sync: center map & open marker popup
+            document.querySelectorAll('.garage-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const garageId = card.getAttribute('data-garage-id');
+                    const marker = markers.find(m => m.options.garageId === garageId);
+                    if (marker) {
+                        marker.openPopup();
+                        map.setView(marker.getLatLng(), 15);
+                    }
+                });
             });
-        });
+        }
+
+        // 2. One source of truth for markers
+        updateMapMarkers(garages);
     };
 
     // --- UI Logic Fixes (Real Maps & Emergency) ---
@@ -83,18 +94,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const emergencyBtn = document.querySelector('.emergency-btn');
     
     const initMap = () => {
-        if (map) {
-            map.invalidateSize();
-            return;
-        }
+        if (map) return;
         try {
-            // Default to Portland (matching seed data) or global view
+            // Default to Portland (matching seed data)
             map = L.map('map').setView([45.5231, -122.6765], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
             console.log("[MAP] Leaflet initialized successfully.");
-            setTimeout(() => map.invalidateSize(), 500); // Ensure layout is settled
+            
+            // Fix for hidden containers or delayed layout
+            setTimeout(() => map.invalidateSize(), 300);
         } catch (err) {
             console.error("[MAP] Failed to initialize Leaflet:", err);
         }
@@ -107,24 +117,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
-        if (garages.length === 0) return;
-
         const bounds = [];
         garages.forEach(g => {
             if (g.latitude && g.longitude) {
-                const marker = L.marker([g.latitude, g.longitude]).addTo(map);
-                marker.bindPopup(`<b>${g.garageName}</b><br>${[g.address, g.city].filter(Boolean).join(', ')}`);
+                const marker = L.marker([g.latitude, g.longitude], { garageId: g.id }).addTo(map);
+                
+                const addressParts = [g.address, g.city, g.state].filter(v => v && String(v).toLowerCase() !== 'null');
+                const formattedAddress = addressParts.join(', ');
+                
+                marker.bindPopup(`<b>${g.garageName}</b><br>${formattedAddress}`);
                 
                 // Marker click sync: scroll into view and highlight card
                 marker.on('click', () => {
-                    const cards = document.querySelectorAll('.garage-card');
-                    cards.forEach(card => {
-                        if (card.querySelector('h3').innerText === g.garageName) {
-                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            card.style.border = '2px solid #409db6';
-                            setTimeout(() => card.style.border = 'none', 3000);
-                        }
-                    });
+                    const card = document.querySelector(`.garage-card[data-garage-id="${g.id}"]`);
+                    if (card) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        card.style.border = '2px solid #409db6';
+                        card.style.backgroundColor = '#f0f9fb';
+                        setTimeout(() => {
+                            card.style.border = 'none';
+                            card.style.backgroundColor = 'white';
+                        }, 3000);
+                    }
                 });
 
                 markers.push(marker);
@@ -132,9 +146,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        // Fit map to visible markers
         if (bounds.length > 0) {
             map.fitBounds(bounds, { padding: [50, 50] });
         }
+        
+        // Ensure tiles are correctly rendered
+        map.invalidateSize();
     };
 
     const applyFilters = () => {
@@ -146,8 +164,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let filtered = allGarages.filter(g => {
             const matchesQuery = !query || g.garageName.toLowerCase().includes(query) || 
-                               g.address.toLowerCase().includes(query) || 
-                               g.city.toLowerCase().includes(query);
+                               (g.address && g.address.toLowerCase().includes(query)) || 
+                               (g.city && g.city.toLowerCase().includes(query));
             const matchesRating = g.rating >= rating;
             const matchesType = !type || g.services.some(s => s.vehicleTypes.includes(type));
             const matchesService = !service || g.services.some(s => s.name === service);
@@ -161,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return matchesQuery && matchesRating && matchesType && matchesService;
         });
 
-        // Geolocation Radius Logic for Emergency Mode
+        // Geolocation Radius Logic for Emergency Mode (Optional layer)
         if (isEmergencyMode && "geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -174,19 +192,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return dist <= radiusKm;
                     });
                     
-                    renderGarages(nearbyFiltered);
-                    updateMapMarkers(nearbyFiltered);
+                    renderDashboard(nearbyFiltered);
                     console.log("[EMERGENCY] Radius filter (10km) applied.");
                 },
                 (err) => {
                     console.warn("[EMERGENCY] Geolocation fallback: showing all verified emergency garages.");
-                    renderGarages(filtered);
-                    updateMapMarkers(filtered);
+                    renderDashboard(filtered);
                 }
             );
         } else {
-            renderGarages(filtered);
-            updateMapMarkers(filtered);
+            renderDashboard(filtered);
         }
     };
 
