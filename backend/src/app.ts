@@ -21,21 +21,32 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 // CORS Configuration
-const frontendUrls = process.env.FRONTEND_URLS || "";
-const frontendUrl = process.env.FRONTEND_URL || "";
-const allowedOrigins = [...frontendUrls.split(","), frontendUrl].map(url => url.trim()).filter(Boolean);
+const allowedOrigins = [
+  ...(process.env.FRONTEND_URLS?.split(",") || []),
+  process.env.FRONTEND_URL
+]
+  .filter(Boolean)
+  .map(url => url!.trim().replace(/\/$/, ""));
+
+// Debug log during startup
+console.log("Allowed CORS origins:", allowedOrigins);
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // allow requests with no origin (health checks, curl, Postman)
+    if (!origin) {
+      return callback(null, true);
     }
+
+    const normalizedOrigin = origin.replace(/\/$/, "");
+
+    if (allowedOrigins.includes(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
+  credentials: true,
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
