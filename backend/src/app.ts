@@ -21,12 +21,10 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 // CORS Configuration
-const allowedOrigins = [
-  ...(process.env.FRONTEND_URLS?.split(",") || []),
-  process.env.FRONTEND_URL
-]
+const allowedOrigins = (process.env.FRONTEND_URLS || "")
+  .split(",")
   .filter(Boolean)
-  .map(url => url!.trim().replace(/\/$/, ""));
+  .map(url => url.trim().replace(/\/$/, ""));
 
 // Debug log during startup
 console.log("Allowed CORS origins:", allowedOrigins);
