@@ -21,7 +21,9 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 // CORS Configuration
-const allowedOrigins = (process.env.FRONTEND_URLS || "").split(",").map(url => url.trim()).filter(Boolean);
+const frontendUrls = process.env.FRONTEND_URLS || "";
+const frontendUrl = process.env.FRONTEND_URL || "";
+const allowedOrigins = [...frontendUrls.split(","), frontendUrl].map(url => url.trim()).filter(Boolean);
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
@@ -57,7 +59,11 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.get("/health", (_req: Request, res: Response) => {
-  res.status(200).json({ status: "ok", message: "Garage Connect API is running" });
+  res.status(200).json({ 
+    status: "ok", 
+    message: "Garage Connect API is running",
+    allowedOrigins: process.env.NODE_ENV === 'production' ? allowedOrigins : '*'
+  });
 });
 
 app.use(errorHandler);
