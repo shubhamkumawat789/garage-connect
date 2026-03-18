@@ -64,6 +64,11 @@
             container.classList.remove("right-panel-active");
         });
 
+        // Wake up backend early
+        window.addEventListener('load', () => {
+            if (window.gcApi) window.gcApi.wakeUp();
+        });
+
         // Login Logic
         async function handleLogin(e, role) {
             e.preventDefault();
@@ -95,7 +100,12 @@
                     }
                 }
             } catch (err) {
-                alert(err.message);
+                console.error('Login error:', err);
+                let msg = err.message;
+                if (msg.includes('Failed to fetch') || msg.toLowerCase().includes('connection')) {
+                    msg = "Server is waking up from sleep. Please wait 10 seconds and click login again.";
+                }
+                alert(msg);
                 btn.disabled = false;
                 btn.innerText = 'Sign In';
             }

@@ -22,8 +22,11 @@ const api = {
         return user ? JSON.parse(user) : null;
     },
 
-    // Fetch wrapper
-    async fetch(endpoint, options = {}) {
+    // Helper for delay
+    _delay: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
+
+    // Fetch wrapper with retry logic for cold starts
+    async fetch(endpoint, options = {}, retries = 3) {
         const token = this.getToken();
         const headers = {
             'Content-Type': 'application/json',
@@ -39,29 +42,57 @@ const api = {
             headers
         };
 
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                console.log(`API Request (Attempt ${attempt}): ${options.method || 'GET'} ${this.BASE_URL}${endpoint}`);
+                const response = await fetch(`${this.BASE_URL}${endpoint}`, config);
+                
+                let data;
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error("Non-JSON response:", text);
+                    throw new Error("Server returned non-JSON response");
+                }
+
+                if (!response.ok) {
+                    console.error(`API Error (${response.status}):`, data);
+                    throw new Error(data.message || 'Something went wrong');
+                }
+
+                return data;
+            } catch (err) {
+                console.error(`Attempt ${attempt} failed:`, err.message);
+                
+                if (attempt === retries) {
+                    if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+                        throw new Error("Connection Error: Server might be waking up after inactivity. Please wait 30 seconds and try again.");
+                    }
+                    throw err;
+                }
+
+                // If it's a fetch error (server sleeping), wait before retrying
+                if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+                    console.log(`Server might be sleeping. Retrying in 2 seconds...`);
+                    await this._delay(2000);
+                } else {
+                    // For other errors, rethrow immediately
+                    throw err;
+                }
+            }
+        }
+    },
+
+    // Wake up the backend (helpful for Render free tier)
+    async wakeUp() {
         try {
-            console.log(`API Request: ${options.method || 'GET'} ${this.BASE_URL}${endpoint}`);
-            const response = await fetch(`${this.BASE_URL}${endpoint}`, config);
-            
-            let data;
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") !== -1) {
-                data = await response.json();
-            } else {
-                const text = await response.text();
-                console.error("Non-JSON response:", text);
-                throw new Error("Server returned non-JSON response");
-            }
-
-            if (!response.ok) {
-                console.error(`API Error (${response.status}):`, data);
-                throw new Error(data.message || 'Something went wrong');
-            }
-
-            return data;
-        } catch (err) {
-            console.error("Fetch implementation error:", err);
-            throw err;
+            console.log("Waking up backend...");
+            // Minimal ping to health check
+            await fetch(`${this.BASE_URL}/health`).catch(() => {});
+        } catch (e) {
+            // Background task, ignore failure
         }
     },
 
