@@ -21,24 +21,36 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 // CORS Configuration
-const allowedOrigins = (process.env.FRONTEND_URLS || "")
-  .split(",")
+const allowedOrigins = [
+  ...(process.env.FRONTEND_URLS || "").split(","),
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+]
   .filter(Boolean)
   .map(url => url.trim().replace(/\/$/, ""));
+
+// Add common local development origins if not in production
+if (process.env.NODE_ENV !== 'production') {
+  const localOrigins = ['http://localhost:5500', 'http://127.0.0.1:5500', 'http://localhost:3000', 'http://localhost:5173'];
+  localOrigins.forEach(origin => {
+    if (!allowedOrigins.includes(origin)) {
+      allowedOrigins.push(origin);
+    }
+  });
+}
 
 // Debug log during startup
 console.log("Allowed CORS origins:", allowedOrigins);
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    // allow requests with no origin (health checks, curl, Postman)
-    if (!origin) {
+    // allow requests with no origin (health checks, curl, Postman, or local file)
+    if (!origin || origin === 'null') {
       return callback(null, true);
     }
 
     const normalizedOrigin = origin.replace(/\/$/, "");
 
-    if (allowedOrigins.includes(normalizedOrigin)) {
+    if (allowedOrigins.includes(normalizedOrigin) || process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
 

@@ -39,14 +39,30 @@ const api = {
             headers
         };
 
-        const response = await fetch(`${this.BASE_URL}${endpoint}`, config);
-        const data = await response.json();
+        try {
+            console.log(`API Request: ${options.method || 'GET'} ${this.BASE_URL}${endpoint}`);
+            const response = await fetch(`${this.BASE_URL}${endpoint}`, config);
+            
+            let data;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                console.error("Non-JSON response:", text);
+                throw new Error("Server returned non-JSON response");
+            }
 
-        if (!response.ok) {
-            throw new Error(data.message || 'Something went wrong');
+            if (!response.ok) {
+                console.error(`API Error (${response.status}):`, data);
+                throw new Error(data.message || 'Something went wrong');
+            }
+
+            return data;
+        } catch (err) {
+            console.error("Fetch implementation error:", err);
+            throw err;
         }
-
-        return data;
     },
 
     // Auth helpers

@@ -76,7 +76,9 @@
                 btn.disabled = true;
                 btn.innerText = 'Signing In...';
 
+                console.log(`Attempting ${role} login for:`, email);
                 const data = await window.gcApi.login(email, password);
+                console.log('Login response data:', data);
                 
                 if (data.success) {
                     // Role check
