@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Emergency Logic: service=Emergency + isVerified=true
             if (isEmergencyMode) {
-                const hasEmergencyService = g.services.some(s => s.name.toLowerCase().includes('emergency'));
+                const hasEmergencyService = g.services && g.services.some(s => s.name.toLowerCase().includes('emergency'));
                 if (!hasEmergencyService || !g.isVerified) return false;
             }
 
