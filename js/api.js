@@ -158,7 +158,12 @@ const api = {
 };
 
 // Auto-check session on protected pages
-if (!window.location.pathname.endsWith('index.html') && !window.location.pathname.endsWith('signup.html')) {
+if (
+    !window.location.pathname.endsWith('index.html') && 
+    !window.location.pathname.endsWith('signup.html') &&
+    window.location.pathname !== '/' &&
+    window.location.pathname !== ''
+) {
     if (!api.getToken()) {
         window.location.href = 'index.html';
     }
