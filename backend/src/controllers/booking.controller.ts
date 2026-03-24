@@ -200,11 +200,12 @@ export const updateBookingStatus = async (req: Request, res: Response): Promise<
 
     // Validate transitions
     const validTransitions: Record<string, string[]> = {
-      PENDING: ["APPROVED", "DECLINED"],
-      APPROVED: ["IN_PROGRESS"],
-      IN_PROGRESS: ["COMPLETED"],
+      PENDING: ["APPROVED", "DECLINED", "CANCELLED"],
+      APPROVED: ["IN_PROGRESS", "CANCELLED"],
+      IN_PROGRESS: ["COMPLETED", "CANCELLED"],
       DECLINED: [],
-      COMPLETED: []
+      COMPLETED: [],
+      CANCELLED: []
     };
 
     if (!validTransitions[currentStatus] || !validTransitions[currentStatus].includes(status)) {

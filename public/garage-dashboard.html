@@ -16,7 +16,11 @@
             <li class="active" data-target="dashboard"><a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
             <li data-target="bookings"><a href="#"><i class="fas fa-calendar-check"></i> Bookings</a></li>
             <li data-target="services"><a href="#"><i class="fas fa-tools"></i> My Services</a></li>
+            <li data-target="emergency-list"><a href="#"><i class="fas fa-exclamation-triangle"></i> Emergency Alerts</a></li>
+            <li data-target="reviews-list"><a href="#"><i class="fas fa-star"></i> Reviews</a></li>
+            <li data-target="wallet"><a href="#"><i class="fas fa-wallet"></i> Wallet</a></li>
             <li data-target="profile"><a href="#"><i class="fas fa-store"></i> Garage Profile</a></li>
+            <li class="feedback-link"><a href="#" id="openFeedback"><i class="fas fa-comment-dots"></i> Feedback</a></li>
             <li class="logout"><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
     </div>
@@ -120,10 +124,65 @@
                      <b>Address</b>
                      <input type="text" value="Near Vaishnodevi Circle, Ahmedabad, Gujarat">                   
                      <br>
+                     <b>Opening Hours (e.g. Mon-Sat 9AM-8PM)</b>
+                     <input type="text" id="profOpeningHours" value="Mon-Sat 9AM-7PM">
+                     <br>
                      <b>Description</b>
-                     <textarea>Apex Auto Garage is a trusted automotive service center dedicated to providing high-quality vehicle maintenance and repair solutions. With a team of certified technicians and state-of-the-art diagnostic tools, we handle everything from routine servicing and oil changes to complex engine repairs and performance upgrades.</textarea>
+                     <textarea id="profDescription">Apex Auto Garage is a trusted automotive service center dedicated to providing high-quality vehicle maintenance and repair solutions. With a team of certified technicians and state-of-the-art diagnostic tools, we handle everything from routine servicing and oil changes to complex engine repairs and performance upgrades.</textarea>
                      <button>Update Profile</button>
                  </form>
+            </section>
+
+            <section id="wallet" class="content-section">
+                <h2>My Wallet & Revenue</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <div>
+                            <h3>Total Balance</h3>
+                            <p id="walletBalance">Rs. 0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3>Add Money / Update Revenue</h3>
+                    <form id="addMoneyForm">
+                        <input type="number" id="walletAmount" placeholder="Amount (Rs.)" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        <select id="walletType" style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="DEPOSIT">Add Money (Deposit)</option>
+                            <option value="REVENUE">Record Revenue</option>
+                            <option value="WITHDRAWAL">Withdraw Money</option>
+                        </select>
+                        <input type="text" id="walletDescription" placeholder="Description (optional)" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button type="submit" class="add-btn" style="width: 100%;">Process Transaction</button>
+                    </form>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3>Transaction History</h3>
+                    <div id="transactionList" style="margin-top: 15px;">
+                        <p>Loading transactions...</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="emergency-list" class="content-section">
+                <h2>Emergency Petrol Alerts</h2>
+                <p>Nearby requests from stranded users. Only verified garages can respond.</p>
+                <div id="emergencyContainer" style="margin-top: 20px;">
+                    <!-- Alerts will load here -->
+                    <p>Loading alerts...</p>
+                </div>
+            </section>
+
+            <section id="reviews-list" class="content-section">
+                <h2>Customer Reviews</h2>
+                <p>See what your customers are saying about your services.</p>
+                <div id="reviewsContainer" style="margin-top: 20px;">
+                    <!-- Reviews will load here -->
+                    <p>Loading reviews...</p>
+                </div>
             </section>
         </main>
     </div>
@@ -143,6 +202,7 @@
                     <label><input type="checkbox" id="vType4" value="FOUR_WHEELER" checked style="width:auto; margin:0"> 4-Wheeler</label>
                     <label><input type="checkbox" id="vType2" value="TWO_WHEELER" style="width:auto; margin:0"> 2-Wheeler</label>
                 </div>
+                <input type="text" id="sParts" placeholder="Parts Availability (e.g. Brake pads, Oil filters in stock)">
                 <button type="submit">Add Service</button>
             </form>
         </div>
@@ -164,7 +224,22 @@
                     <label><input type="checkbox" id="editVType4" value="FOUR_WHEELER" style="width:auto; margin:0"> 4-Wheeler</label>
                     <label><input type="checkbox" id="editVType2" value="TWO_WHEELER" style="width:auto; margin:0"> 2-Wheeler</label>
                 </div>
+                <input type="text" id="editSParts" placeholder="Parts Availability">
                 <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Submit Feedback</h3>
+                <span id="closeFeedback" class="close-btn">&times;</span>
+            </div>
+            <form id="feedbackForm">
+                <textarea id="feedbackMessage" placeholder="Your feedback or suggestions..." rows="4" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                <button type="submit" class="add-btn" style="width: 100%;">Submit Feedback</button>
             </form>
         </div>
     </div>

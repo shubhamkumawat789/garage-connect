@@ -96,15 +96,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     const initMap = () => {
         if (map) return;
         try {
-            // Default to Portland (matching seed data)
-            map = L.map('map').setView([45.5231, -122.6765], 13);
+            // Ahmedabad, Gujarat Coordinates
+            const ahmedabad = [23.0225, 72.5714];
+            map = L.map('map').setView(ahmedabad, 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
-            console.log("[MAP] Leaflet initialized successfully.");
+            console.log("[MAP] Leaflet centered on Ahmedabad.");
             
             // Fix for hidden containers or delayed layout
             setTimeout(() => map.invalidateSize(), 300);
+
+            // Full Screen Map logic
+            document.getElementById('fullScreenMap')?.addEventListener('click', () => {
+                const mapEl = document.getElementById('map');
+                if (mapEl.requestFullscreen) {
+                    mapEl.requestFullscreen();
+                } else if (mapEl.webkitRequestFullscreen) {
+                    mapEl.webkitRequestFullscreen();
+                } else if (mapEl.msRequestFullscreen) {
+                    mapEl.msRequestFullscreen();
+                }
+            });
+
+            // Open in Google Maps logic
+            document.getElementById('openInGoogleMaps')?.addEventListener('click', () => {
+                const center = map.getCenter();
+                window.open(`https://www.google.com/maps/@${center.lat},${center.lng},15z`, '_blank');
+            });
+
         } catch (err) {
             console.error("[MAP] Failed to initialize Leaflet:", err);
         }
@@ -125,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const addressParts = [g.address, g.city, g.state].filter(v => v && String(v).toLowerCase() !== 'null');
                 const formattedAddress = addressParts.join(', ');
                 
-                marker.bindPopup(`<b>${g.garageName}</b><br>${formattedAddress}`);
+                marker.bindPopup(`<b>${g.garageName}</b><br>${formattedAddress}<br><a href="https://wa.me/${g.contactNo || ''}" target="_blank" style="color:#25d366;"><i class="fab fa-whatsapp"></i> WhatsApp</a>`);
                 
                 // Marker click sync: scroll into view and highlight card
                 marker.on('click', () => {
@@ -149,9 +169,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Fit map to visible markers
         if (bounds.length > 0) {
             map.fitBounds(bounds, { padding: [50, 50] });
+        } else {
+            // Default to Ahmedabad if no garages
+            map.setView([23.0225, 72.5714], 13);
         }
         
-        // Ensure tiles are correctly rendered
         map.invalidateSize();
     };
 
@@ -170,45 +192,74 @@ document.addEventListener('DOMContentLoaded', async () => {
             const matchesType = !type || g.services.some(s => s.vehicleTypes.includes(type));
             const matchesService = !service || g.services.some(s => s.name === service);
             
-            // Emergency Logic: service=Emergency + isVerified=true
-            if (isEmergencyMode) {
-                const hasEmergencyService = g.services && g.services.some(s => s.name.toLowerCase().includes('emergency'));
-                if (!hasEmergencyService || !g.isVerified) return false;
-            }
-
             return matchesQuery && matchesRating && matchesType && matchesService;
         });
 
-        // Geolocation Radius Logic for Emergency Mode (Optional layer)
-        if (isEmergencyMode && "geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    const radiusKm = 10;
-                    
-                    const nearbyFiltered = filtered.filter(g => {
-                        if (!g.latitude || !g.longitude) return false;
-                        const dist = window.gcApi.getDistance(latitude, longitude, g.latitude, g.longitude);
-                        return dist <= radiusKm;
-                    });
-                    
-                    renderDashboard(nearbyFiltered);
-                    console.log("[EMERGENCY] Radius filter (10km) applied.");
-                },
-                (err) => {
-                    console.warn("[EMERGENCY] Geolocation fallback: showing all verified emergency garages.");
-                    renderDashboard(filtered);
-                }
-            );
-        } else {
-            renderDashboard(filtered);
-        }
+        renderDashboard(filtered);
     };
 
-    emergencyBtn?.addEventListener('click', () => {
-        emergencyBtn.classList.toggle('active');
-        emergencyBtn.style.backgroundColor = emergencyBtn.classList.contains('active') ? '#b64040' : 'red';
-        applyFilters();
+    emergencyBtn?.addEventListener('click', async () => {
+        if (!confirm("Confirm Emergency Petrol Call? This will share your location with nearby garages.")) return;
+        
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const data = await window.gcApi.fetch('/emergency', {
+                        method: 'POST',
+                        body: JSON.stringify({ latitude, longitude })
+                    });
+                    if (data.success) {
+                        alert("Emergency Request Sent! Admin will contact you as soon as possible.");
+                        emergencyBtn.style.backgroundColor = '#b64040';
+                        emergencyBtn.innerText = 'Request Sent';
+                    }
+                } catch (err) {
+                    alert("Failed to send emergency request: " + err.message);
+                }
+            }, (err) => {
+                alert("Location access denied. Please allow location to use this feature.");
+            });
+        }
+    });
+
+    // 10. Feedback Logic
+    const feedbackModal = document.getElementById('feedbackModal');
+    const openFeedbackBtn = document.getElementById('openFeedback');
+    const closeFeedbackBtn = document.getElementById('closeFeedback');
+    const feedbackForm = document.getElementById('feedbackForm');
+
+    openFeedbackBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        feedbackModal.classList.add('active');
+    });
+
+    closeFeedbackBtn?.addEventListener('click', () => feedbackModal.classList.remove('active'));
+    window.addEventListener('click', (e) => { if (e.target === feedbackModal) feedbackModal.classList.remove('active'); });
+
+    feedbackForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = feedbackForm.querySelector('button');
+        const message = document.getElementById('feedbackMessage').value;
+
+        try {
+            btn.disabled = true;
+            btn.innerText = 'Submitting...';
+            const data = await window.gcApi.fetch('/feedback', {
+                method: 'POST',
+                body: JSON.stringify({ message })
+            });
+            if (data.success) {
+                alert('Thank you for your feedback!');
+                feedbackModal.classList.remove('active');
+                feedbackForm.reset();
+            }
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Submit Feedback';
+        }
     });
 
     document.getElementById('filterRating').addEventListener('change', applyFilters);

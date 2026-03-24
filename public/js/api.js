@@ -62,6 +62,11 @@ const api = {
                 }
 
                 if (!response.ok) {
+                    if (response.status === 401) {
+                        console.warn("Session expired or invalid. Logging out...");
+                        this.logout();
+                        throw new Error("Session expired. Please login again.");
+                    }
                     console.error(`API Error (${response.status}):`, data);
                     throw new Error(data.message || 'Something went wrong');
                 }

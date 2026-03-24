@@ -84,6 +84,7 @@ export const updateGarageProfile = async (req: Request, res: Response): Promise<
               ...(data.garage.pincode && { pincode: data.garage.pincode }),
               ...(data.garage.contactNo && { contactNo: data.garage.contactNo }),
               ...(data.garage.description && { description: data.garage.description }),
+              ...(data.garage.openingHours && { openingHours: data.garage.openingHours }),
             },
           });
         }

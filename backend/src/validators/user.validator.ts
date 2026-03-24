@@ -14,6 +14,7 @@ export const updateGarageProfileSchema = z.object({
     pincode: z.string().optional(),
     contactNo: z.string().optional(),
     description: z.string().optional(),
+    openingHours: z.string().optional(),
   }).optional()
 });
 

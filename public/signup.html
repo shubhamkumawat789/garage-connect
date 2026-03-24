@@ -142,7 +142,15 @@
                 </div>
                 <div class="form-group">
                     <label for="garageAddress">Garage Address</label>
-                    <textarea id="garageAddress" placeholder="Enter your garage's full address" rows="3"></textarea>
+                    <textarea id="garageAddress" placeholder="Enter your garage's full address" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="button" id="pinLocation" style="background: #27ae60; width: 100%; margin: 5px 0;">
+                        <i class="fas fa-map-marker-alt"></i> Pin Current Location
+                    </button>
+                    <input type="hidden" id="lat">
+                    <input type="hidden" id="lng">
+                    <small id="locationStatus" style="color: #666; font-size: 11px;"></small>
                 </div>
             </div>
 
@@ -179,6 +187,25 @@
         // Add event listener to the select dropdown
         userTypeSelect.addEventListener('change', toggleDetails);
 
+        // Location pinning logic
+        document.getElementById('pinLocation').addEventListener('click', () => {
+            const status = document.getElementById('locationStatus');
+            if (!navigator.geolocation) {
+                status.innerText = 'Geolocation is not supported by your browser';
+                return;
+            }
+            status.innerText = 'Locating...';
+            navigator.geolocation.getCurrentPosition((pos) => {
+                document.getElementById('lat').value = pos.coords.latitude;
+                document.getElementById('lng').value = pos.coords.longitude;
+                status.innerText = `Pinned: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+                status.style.color = '#27ae60';
+            }, (err) => {
+                status.innerText = 'Unable to retrieve location. Please input manually or try again.';
+                status.style.color = '#e74c3c';
+            });
+        });
+
         // Call the function once on page load to set the initial state
         document.addEventListener('DOMContentLoaded', toggleDetails);
 
@@ -214,6 +241,8 @@
                     payload.garage = {
                         garageName: document.getElementById('garageName').value,
                         address: document.getElementById('garageAddress').value,
+                        latitude: parseFloat(document.getElementById('lat').value) || null,
+                        longitude: parseFloat(document.getElementById('lng').value) || null
                     };
                     response = await window.gcApi.registerOwner(payload);
                 }

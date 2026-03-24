@@ -12,6 +12,9 @@ import serviceRoutes from "./routes/service.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import feedbackRoutes from "./routes/feedback.routes.js";
+import walletRoutes from "./routes/wallet.routes.js";
+import emergencyRoutes from "./routes/emergency.routes.js";
 
 const app = express();
 
@@ -76,6 +79,9 @@ app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/feedback", feedbackRoutes);
+app.use("/api/wallet", walletRoutes);
+app.use("/api/emergency", emergencyRoutes);
 
 app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({ 

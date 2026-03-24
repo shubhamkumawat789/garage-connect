@@ -29,7 +29,8 @@ export const createService = async (req: Request, res: Response): Promise<void> 
         description: data.description || null,
         pricingType: data.pricingType,
         basePrice: data.basePrice ?? null,
-        vehicleTypes: data.vehicleTypes
+        vehicleTypes: data.vehicleTypes,
+        partsAvailable: data.partsAvailable || null
       }
     });
 
@@ -64,7 +65,8 @@ export const updateService = async (req: Request, res: Response): Promise<void> 
         ...(data.description !== undefined && { description: data.description }),
         ...(data.pricingType && { pricingType: data.pricingType }),
         ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
-        ...(data.vehicleTypes && { vehicleTypes: data.vehicleTypes })
+        ...(data.vehicleTypes && { vehicleTypes: data.vehicleTypes }),
+        ...(data.partsAvailable !== undefined && { partsAvailable: data.partsAvailable })
       }
     });
 

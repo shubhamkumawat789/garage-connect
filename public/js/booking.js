@@ -31,6 +31,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             garageData = data.garage;
             document.getElementById('garageName').innerText = garageData.garageName;
             document.getElementById('garageAddress').innerHTML = `<i class="fas fa-map-marker-alt"></i> ${garageData.address}, ${garageData.city}`;
+            if (garageData.openingHours) {
+                document.getElementById('garageAddress').innerHTML += `<br><i class="fas fa-clock"></i> Timing: ${garageData.openingHours}`;
+            }
             document.getElementById('garageRating').innerHTML = `<i class="fas fa-star" style="color:#f1c40f"></i> ${garageData.rating.toFixed(1)} (${garageData.reviews?.length || 0} Reviews)`;
 
             // Populate Services
@@ -39,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div>
                         <strong>${s.name}</strong><br>
                         <small>${s.vehicleTypes.join(', ')}</small>
+                        ${s.partsAvailable ? `<br><small style="color: #27ae60;"><i class="fas fa-check-circle"></i> Parts: ${s.partsAvailable}</small>` : ''}
                     </div>
                     <div>Rs. ${s.basePrice}</div>
                 </div>

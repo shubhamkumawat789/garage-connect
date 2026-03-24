@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             profileForm.querySelector('input:nth-of-type(2)').value = user.fullName;
             profileForm.querySelector('input:nth-of-type(3)').value = garage.contactNo || '';
             profileForm.querySelector('input:nth-of-type(4)').value = garage.address;
-            profileForm.querySelector('textarea').value = garage.description || '';
+            document.getElementById('profOpeningHours').value = garage.openingHours || '';
+            document.getElementById('profDescription').value = garage.description || '';
         }
 
         // Load Services
@@ -82,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <p><strong>Vehicle Types:</strong> ${s.vehicleTypes.join(', ')}</p>
                         <div style="margin-top: 10px; display:flex; gap: 10px;">
                             <button class="edit-btn" style="background:#ffc107; color:#000;" 
-                                data-id="${s.id}" data-name="${s.name}" data-price="${s.basePrice}" data-vtypes="${s.vehicleTypes.join(',')}">Edit</button>
+                                data-id="${s.id}" data-name="${s.name}" data-price="${s.basePrice}" data-vtypes="${s.vehicleTypes.join(',')}" data-parts="${s.partsAvailable || ''}">Edit</button>
                             <button class="delete-btn" style="background:#dc3545; color:#fff;" onclick="deleteService('${s.id}')">Delete</button>
                         </div>
                     </div>
@@ -188,7 +189,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const payload = {
                 name: document.getElementById('sName').value,
                 basePrice: parseFloat(document.getElementById('sPrice').value),
-                vehicleTypes
+                vehicleTypes,
+                partsAvailable: document.getElementById('sParts').value
             };
 
             try {
@@ -223,7 +225,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     garageName: profileForm.querySelector('input:nth-of-type(1)').value,
                     contactNo: profileForm.querySelector('input:nth-of-type(3)').value,
                     address: profileForm.querySelector('input:nth-of-type(4)').value,
-                    description: profileForm.querySelector('textarea').value
+                    openingHours: document.getElementById('profOpeningHours').value,
+                    description: document.getElementById('profDescription').value
                 }
             };
 
@@ -262,6 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const vTypes = btn.getAttribute('data-vtypes').split(',');
                 document.getElementById('editVType4').checked = vTypes.includes('FOUR_WHEELER');
                 document.getElementById('editVType2').checked = vTypes.includes('TWO_WHEELER');
+                document.getElementById('editSParts').value = btn.getAttribute('data-parts');
                 
                 editServiceModal.classList.add('active');
             }
@@ -278,7 +282,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const payload = {
                 name: document.getElementById('editSName').value,
                 basePrice: parseFloat(document.getElementById('editSPrice').value),
-                vehicleTypes
+                vehicleTypes,
+                partsAvailable: document.getElementById('editSParts').value
             };
 
             try {
@@ -315,5 +320,209 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert(err.message);
             }
         };
+        // 9. Wallet Logic
+        const loadWallet = async () => {
+            const balanceEl = document.getElementById('walletBalance');
+            const listEl = document.getElementById('transactionList');
+            try {
+                const data = await window.gcApi.fetch(`/wallet/${garage.id}`);
+                if (data.success) {
+                    balanceEl.innerText = `Rs. ${data.balance.toLocaleString()}`;
+                    if (data.transactions.length === 0) {
+                        listEl.innerHTML = '<p>No transactions yet.</p>';
+                    } else {
+                        listEl.innerHTML = `
+                            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+                                <thead style="background:#f4f4f4;">
+                                    <tr>
+                                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Date</th>
+                                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Type</th>
+                                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Amount</th>
+                                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.transactions.map(t => `
+                                        <tr>
+                                            <td style="padding:10px; border-bottom:1px solid #eee;">${new Date(t.createdAt).toLocaleDateString()}</td>
+                                            <td style="padding:10px; border-bottom:1px solid #eee;"><span style="color: ${t.type === 'WITHDRAWAL' ? 'red' : 'green'}">${t.type}</span></td>
+                                            <td style="padding:10px; border-bottom:1px solid #eee;">Rs. ${t.amount.toLocaleString()}</td>
+                                            <td style="padding:10px; border-bottom:1px solid #eee;">${t.description || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                    }
+                }
+            } catch (err) {
+                listEl.innerHTML = `<p>Error: ${err.message}</p>`;
+            }
+        };
+
+        const addMoneyForm = document.getElementById('addMoneyForm');
+        addMoneyForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = addMoneyForm.querySelector('button');
+            const payload = {
+                garageId: garage.id,
+                amount: parseFloat(document.getElementById('walletAmount').value),
+                type: document.getElementById('walletType').value,
+                description: document.getElementById('walletDescription').value
+            };
+
+            try {
+                btn.disabled = true;
+                btn.innerText = 'Processing...';
+                const data = await window.gcApi.fetch('/wallet', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                if (data.success) {
+                    alert('Transaction processed successfully!');
+                    addMoneyForm.reset();
+                    loadWallet();
+                }
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Process Transaction';
+            }
+        });
+
+        // 10. Feedback Logic
+        const feedbackModal = document.getElementById('feedbackModal');
+        const openFeedbackBtn = document.getElementById('openFeedback');
+        const closeFeedbackBtn = document.getElementById('closeFeedback');
+        const feedbackForm = document.getElementById('feedbackForm');
+
+        openFeedbackBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            feedbackModal.classList.add('active');
+        });
+
+        closeFeedbackBtn?.addEventListener('click', () => feedbackModal.classList.remove('active'));
+        window.addEventListener('click', (e) => { if (e.target === feedbackModal) feedbackModal.classList.remove('active'); });
+
+        feedbackForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = feedbackForm.querySelector('button');
+            const message = document.getElementById('feedbackMessage').value;
+
+            try {
+                btn.disabled = true;
+                btn.innerText = 'Submitting...';
+                const data = await window.gcApi.fetch('/feedback', {
+                    method: 'POST',
+                    body: JSON.stringify({ message })
+                });
+                if (data.success) {
+                    alert('Thank you for your feedback!');
+                    feedbackModal.classList.remove('active');
+                    feedbackForm.reset();
+                }
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Submit Feedback';
+            }
+        });
+
+        // 11. Emergency Alerts Logic
+        const loadEmergencyRequests = async () => {
+            const container = document.getElementById('emergencyContainer');
+            if (!garage.isVerified) {
+                container.innerHTML = '<p style="color:red;"><i class="fas fa-lock"></i> Only verified garages can view active emergency alerts. Please contact admin for verification.</p>';
+                return;
+            }
+
+            try {
+                const data = await window.gcApi.fetch('/emergency');
+                if (data.success) {
+                    const requests = data.requests;
+                    if (requests.length === 0) {
+                        container.innerHTML = '<p>No active emergency alerts in your area.</p>';
+                    } else {
+                        container.innerHTML = requests.map(r => `
+                            <div class="booking-card" style="border-left: 4px solid ${r.status === 'PENDING' ? '#ff4d4d' : '#4CAF50'};">
+                                <div style="display:flex; justify-content:space-between; align-items:start;">
+                                    <div>
+                                        <h4>Emergency Petrol Request</h4>
+                                        <p><strong>Customer:</strong> ${r.customer.user.fullName}</p>
+                                        <p><strong>Status:</strong> <span class="status ${r.status.toLowerCase()}">${r.status}</span></p>
+                                        <p><i class="fas fa-clock"></i> ${new Date(r.createdAt).toLocaleString()}</p>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        <a href="https://www.google.com/maps?q=${r.latitude},${r.longitude}" target="_blank" class="approve-btn" style="background:#409db6; margin-bottom:5px; display:inline-block; padding: 5px 10px; font-size:12px;">
+                                            <i class="fas fa-map-marker-alt"></i> View Location
+                                        </a>
+                                        ${r.status === 'PENDING' ? `
+                                            <button class="approve-btn" onclick="responseToEmergency('${r.id}', 'RESPONDED')" style="display:block; width:100%;">Respond Now</button>
+                                        ` : ''}
+                                        ${r.status === 'RESPONDED' ? `
+                                            <button class="approve-btn" onclick="responseToEmergency('${r.id}', 'RESOLVED')" style="display:block; width:100%; background:#28a745;">Mark Resolved</button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (err) {
+                container.innerHTML = `<p>Error: ${err.message}</p>`;
+            }
+        };
+
+        window.responseToEmergency = async (id, status) => {
+            try {
+                const data = await window.gcApi.fetch(`/emergency/${id}/status`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status })
+                });
+                if (data.success) {
+                    loadEmergencyRequests();
+                }
+            } catch (err) {
+                alert(err.message);
+            }
+        };
+        // 12. Reviews Logic
+        const loadReviews = async () => {
+            const container = document.getElementById('reviewsContainer');
+            try {
+                // Fetch full details including reviews for this specific garage
+                const data = await window.gcApi.fetch(`/garages/${garage.id}`);
+                const myGarage = data.garage;
+                
+                if (myGarage.reviews && myGarage.reviews.length > 0) {
+                    container.innerHTML = myGarage.reviews.map(r => `
+                        <div class="booking-card">
+                            <div style="display:flex; justify-content:space-between;">
+                                <strong>${r.customer?.user?.fullName || 'Anonymous Customer'}</strong>
+                                <span style="color:#f1c40f;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+                            </div>
+                            <p style="margin-top:10px;">${r.comment || 'No comment provided.'}</p>
+                            <small style="color:#888;">${new Date(r.createdAt).toLocaleDateString()}</small>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p>No reviews yet.</p>';
+                }
+            } catch (err) {
+                container.innerHTML = `<p>Error loading reviews: ${err.message}</p>`;
+            }
+        };
+
+        // 13. Initial Load for tabs
+        document.querySelectorAll('.nav li').forEach(li => {
+            li.addEventListener('click', () => {
+                const target = li.getAttribute('data-target');
+                if (target === 'wallet') loadWallet();
+                if (target === 'emergency-list') loadEmergencyRequests();
+                if (target === 'reviews-list') loadReviews();
+            });
+        });
     }
 });

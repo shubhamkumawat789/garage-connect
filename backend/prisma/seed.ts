@@ -40,20 +40,22 @@ async function main() {
   const garage1 = await prisma.garage.create({
     data: {
       userId: ownerUser.id,
-      garageName: 'FastFix Auto Repair',
-      address: '101 Motor Way',
-      city: 'Portland',
-      state: 'OR',
-      pincode: '97204',
+      garageName: 'Apex Auto Garage',
+      address: 'Near Vaishnodevi Circle',
+      city: 'Ahmedabad',
+      state: 'Gujarat',
+      pincode: '382421',
       isVerified: true,
-      latitude: 45.5231,
-      longitude: -122.6765,
+      latitude: 23.1367,
+      longitude: 72.5401,
+      contactNo: '9876543210',
+      openingHours: 'Mon-Sat 9AM-8PM',
       services: {
         create: [
-          { name: 'Standard Oil Change', basePrice: 49.99, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER'] },
-          { name: 'Brake Inspection', basePrice: 20.00, pricingType: 'INSPECTION_BASED', vehicleTypes: ['FOUR_WHEELER'] },
-          { name: 'Bike Chain Lube', basePrice: 15.00, pricingType: 'FIXED', vehicleTypes: ['TWO_WHEELER'] },
-          { name: 'Emergency Towing', basePrice: 100.00, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER', 'TWO_WHEELER'] }
+          { name: 'Standard Oil Change', basePrice: 499.00, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER'], partsAvailable: 'Shell/Castrol Oil, Oil Filter' },
+          { name: 'Brake Inspection', basePrice: 200.00, pricingType: 'INSPECTION_BASED', vehicleTypes: ['FOUR_WHEELER'], partsAvailable: 'Brake Pads (Multiple Brands)' },
+          { name: 'Bike Chain Lube', basePrice: 150.00, pricingType: 'FIXED', vehicleTypes: ['TWO_WHEELER'], partsAvailable: 'Motul/Yamalube Lube' },
+          { name: 'Emergency Petrol Call', basePrice: 100.00, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER', 'TWO_WHEELER'] }
         ]
       }
     },
@@ -63,18 +65,21 @@ async function main() {
   const garage2 = await prisma.garage.create({
     data: {
       userId: ownerUser.id,
-      garageName: 'Speedy Motors',
-      address: '500 Speed St',
-      city: 'Portland',
-      state: 'OR',
-      pincode: '97205',
+      garageName: 'Speedy Motors Ahmedabad',
+      address: 'Shivranjani Cross Roads',
+      city: 'Ahmedabad',
+      state: 'Gujarat',
+      pincode: '380015',
       isVerified: true,
-      latitude: 45.5150,
-      longitude: -122.6850,
+      latitude: 23.0235,
+      longitude: 72.5312,
+      contactNo: '9876543211',
+      openingHours: '24/7 (Emergency Focused)',
       services: {
         create: [
-          { name: 'Full Service', basePrice: 199.99, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER'] },
-          { name: 'Part Replacement', basePrice: 50.00, pricingType: 'PARTS_DEPENDENT', vehicleTypes: ['FOUR_WHEELER', 'TWO_WHEELER'] }
+          { name: 'Full Service', basePrice: 1999.00, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER'], partsAvailable: 'All essential spares' },
+          { name: 'Part Replacement', basePrice: 500.00, pricingType: 'PARTS_DEPENDENT', vehicleTypes: ['FOUR_WHEELER', 'TWO_WHEELER'], partsAvailable: 'Batteries, Tyres, Bulbs' },
+          { name: 'Emergency Petrol Call', basePrice: 100.00, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER', 'TWO_WHEELER'] }
         ]
       }
     }
@@ -84,16 +89,19 @@ async function main() {
     data: {
       userId: ownerUser.id,
       garageName: 'Pro Auto Works',
-      address: '789 Grease Blvd',
-      city: 'Vancouver',
-      state: 'WA',
-      pincode: '98660',
-      isVerified: false,
-      latitude: 45.6277,
-      longitude: -122.6720,
+      address: 'C.G. Road',
+      city: 'Ahmedabad',
+      state: 'Gujarat',
+      pincode: '380009',
+      isVerified: true,
+      latitude: 23.0338,
+      longitude: 72.5630,
+      contactNo: '9876543212',
+      openingHours: 'Mon-Sun 10AM-9PM',
       services: {
         create: [
-          { name: 'Engine Tuning', basePrice: 150.00, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER'] }
+          { name: 'Engine Tuning', basePrice: 1500.00, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER'], partsAvailable: 'Performance Parts' },
+          { name: 'Emergency Petrol Call', basePrice: 100.00, pricingType: 'FIXED', vehicleTypes: ['FOUR_WHEELER', 'TWO_WHEELER'] }
         ]
       }
     }

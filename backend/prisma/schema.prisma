@@ -32,6 +32,18 @@ enum ServicePricingType {
   PARTS_DEPENDENT
 }
 
+enum TransactionType {
+  DEPOSIT
+  REVENUE
+  WITHDRAWAL
+}
+
+enum EmergencyStatus {
+  PENDING
+  RESPONDED
+  RESOLVED
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -43,6 +55,7 @@ model User {
 
   customer Customer?
   garages  Garage[]
+  feedbacks Feedback[]
 
   @@index([email])
 }
@@ -55,6 +68,7 @@ model Customer {
   vehicles Vehicle[]
   bookings Booking[]
   reviews  Review[]
+  emergencyRequests EmergencyRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,12 +88,15 @@ model Garage {
   description String?
   latitude    Float?
   longitude   Float?
-  rating      Float   @default(0.0)
-  isVerified  Boolean @default(false)
+  rating       Float   @default(0.0)
+  isVerified   Boolean @default(false)
+  balance      Float   @default(0.0)
+  openingHours String?
 
   services Service[]
   bookings Booking[]
   reviews  Review[]
+  walletTransactions WalletTransaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -111,11 +128,12 @@ model Service {
   garageId String
   garage   Garage @relation(fields: [garageId], references: [id])
 
-  name         String
-  description  String?
-  pricingType  ServicePricingType @default(FIXED)
-  basePrice    Float?
-  vehicleTypes VehicleType[]
+  name           String
+  description    String?
+  pricingType    ServicePricingType @default(FIXED)
+  basePrice      Float?
+  vehicleTypes   VehicleType[]
+  partsAvailable String?
 
   bookingItems BookingItem[]
   createdAt    DateTime      @default(now())
@@ -183,4 +201,35 @@ model Review {
   createdAt DateTime @default(now())
 
   @@index([garageId])
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  name      String?
+  email     String?
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model WalletTransaction {
+  id          String   @id @default(uuid())
+  garageId    String
+  garage      Garage   @relation(fields: [garageId], references: [id])
+  amount      Float
+  type        TransactionType
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model EmergencyRequest {
+  id          String   @id @default(uuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  latitude    Float
+  longitude   Float
+  status      EmergencyStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
