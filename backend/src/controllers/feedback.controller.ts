@@ -10,9 +10,9 @@ export const createFeedback = async (req: Request, res: Response): Promise<void>
     const feedback = await prisma.feedback.create({
       data: {
         message: data.message,
-        name: data.name,
-        email: data.email,
-        userId: userId || null,
+        name: data.name ?? null,
+        email: data.email ?? null,
+        userId: userId ?? null,
       },
     });
 

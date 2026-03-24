@@ -8,7 +8,7 @@ export const createWalletTransaction = async (req: Request, res: Response): Prom
     const userId = req.user?.sub;
 
     const garage = await prisma.garage.findUnique({
-      where: { id: data.garageId },
+      where: { id: String(data.garageId) },
     });
 
     if (!garage) {
@@ -28,8 +28,8 @@ export const createWalletTransaction = async (req: Request, res: Response): Prom
         data: {
           amount: data.amount,
           type: data.type,
-          description: data.description,
-          garageId: data.garageId,
+          description: data.description ?? null,
+          garageId: String(data.garageId),
         },
       });
 
@@ -42,7 +42,7 @@ export const createWalletTransaction = async (req: Request, res: Response): Prom
       }
 
       await tx.garage.update({
-        where: { id: data.garageId },
+        where: { id: String(data.garageId) },
         data: { balance: newBalance },
       });
 
@@ -57,7 +57,7 @@ export const createWalletTransaction = async (req: Request, res: Response): Prom
 
 export const getGarageTransactions = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { garageId } = req.params;
+    const garageId = String(req.params.garageId);
     const userId = req.user?.sub;
 
     const garage = await prisma.garage.findUnique({

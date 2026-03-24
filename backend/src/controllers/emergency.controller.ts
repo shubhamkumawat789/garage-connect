@@ -21,7 +21,7 @@ export const createEmergencyRequest = async (req: Request, res: Response): Promi
       return;
     }
 
-    const emergencyRequest = await prisma.emergencyRequest.create({
+    const emergencyRequest = await (prisma as any).emergencyRequest.create({
       data: {
         latitude: data.latitude,
         longitude: data.longitude,
@@ -38,11 +38,11 @@ export const createEmergencyRequest = async (req: Request, res: Response): Promi
 export const updateEmergencyStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { requestId } = req.params;
-    const { status } = req.body; // status: PENDING, RESPONDED, RESOLVED
+    const { status } = req.body;
 
-    const updatedRequest = await prisma.emergencyRequest.update({
-      where: { id: requestId },
-      data: { status },
+    const updatedRequest = await (prisma as any).emergencyRequest.update({
+      where: { id: String(requestId) },
+      data: { status: String(status) },
     });
 
     res.status(200).json({ success: true, emergencyRequest: updatedRequest });
@@ -53,7 +53,7 @@ export const updateEmergencyStatus = async (req: Request, res: Response): Promis
 
 export const getAllEmergencyRequests = async (req: Request, res: Response): Promise<void> => {
   try {
-    const requests = await prisma.emergencyRequest.findMany({
+    const requests = await (prisma as any).emergencyRequest.findMany({
       include: {
         customer: {
           include: {
