@@ -141,7 +141,11 @@ const api = {
                 return data.user;
             }
         } catch (err) {
-            this.logout();
+            // Silently clear token — do NOT call logout() here
+            // logout() would redirect away from protected pages and cause
+            // an alert loop on the login page for expired tokens.
+            this.clearToken();
+            localStorage.removeItem('gc_user');
         }
         return null;
     },
@@ -166,13 +170,23 @@ const api = {
     }
 };
 
-// Auto-check session on protected pages
-if (
-    !window.location.pathname.endsWith('index.html') && 
-    !window.location.pathname.endsWith('signup.html') &&
-    window.location.pathname !== '/' &&
-    window.location.pathname !== ''
-) {
+const _isLoginPage = (
+    window.location.pathname.endsWith('index.html') ||
+    window.location.pathname === '/' ||
+    window.location.pathname === ''
+);
+const _isSignupPage = window.location.pathname.endsWith('signup.html');
+
+if (_isLoginPage) {
+    // On the login page: silently clear any stale/expired token
+    // so a returning user doesn't see a 401-driven 'Session expired' alert.
+    api.clearToken();
+    localStorage.removeItem('gc_user');
+    // Ping the backend in the background so Render wakes up before the user
+    // clicks Login (avoids the first-login cold-start delay).
+    api.wakeUp();
+} else if (!_isSignupPage) {
+    // On all other (protected) pages: redirect to login if not authenticated.
     if (!api.getToken()) {
         window.location.href = 'index.html';
     }
